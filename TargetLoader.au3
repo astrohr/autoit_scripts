@@ -28,8 +28,15 @@ Global $aTargetNames[0]
 Global $aTargetRas[0]
 Global $aTargetDes[0]
 
-$sFileName = _NowDate() & ".txt"
-$sFileDir = "D:\Pictures\TT\" & _NowDate()
+Local $dToday=_DateToDayValue(@YEAR, @MON, @MDAY),$Y, $M, $D
+
+If @HOUR < 12 Then
+	$dToday=_DayValueToDate($dToday-1, $Y, $M, $D)
+	$dToday= StringFormat("%04i-%02i-%02i", $Y,  $M,  $D)
+EndIf
+
+$sFileName = $dToday & ".txt"
+$sFileDir = "D:\Pictures\TT\" & $dToday
 $sFilePath = $sFileDir & "\" & $sFileName
 
 
