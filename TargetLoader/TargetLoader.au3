@@ -1,5 +1,6 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=TargetLoader.ico
+#AutoIt3Wrapper_UseX64=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <Constants.au3>
 #include <Date.au3>
@@ -28,23 +29,25 @@ Global $aTargetNames[0]
 Global $aTargetRas[0]
 Global $aTargetDes[0]
 
-Local $dToday=_DateToDayValue(@YEAR, @MON, @MDAY),$Y, $M, $D
+Local $dToday = _DateToDayValue(@YEAR, @MON, @MDAY), $Y, $M, $D
 
 If @HOUR < 12 Then
-	$dToday =_DayValueToDate($dToday-1, $Y, $M, $D)
-	$dToday = StringFormat("%04i-%02i-%02i", $Y,  $M,  $D)
+	$dToday = _DayValueToDate($dToday - 1, $Y, $M, $D)
+	$dToday = StringFormat("%04i-%02i-%02i", $Y, $M, $D)
 
 Else
 	$dToday = _DayValueToDate($dToday, $Y, $M, $D)
-	$dToday = StringFormat("%04i-%02i-%02i", $Y,  $M,  $D)
+	$dToday = StringFormat("%04i-%02i-%02i", $Y, $M, $D)
 EndIf
 
 $sFileName = $dToday & ".txt"
-$sFileDir = "D:\Pictures\TT\" & $dToday
+$sTTPath = IniRead("C:\Users\operator\Documents\AutoIt_scripts\dagor_scripts.ini", "General", "PhotoFolder", "D:\Pictures\TT")
+$sFileDir = $sTTPath & "\" & $dToday
 $sFilePath = $sFileDir & "\" & $sFileName
 
 
-$hFileOpen = FileOpen($sFilePath, $FO_READ)
+;$hFileOpen = FileOpen($sFilePath, $FO_READ)
+$hFileOpen = FileOpen($sFilePath, 0)
 If $hFileOpen = -1 Then
 	MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file.")
 	Exit
@@ -54,12 +57,12 @@ EndIf
 Func ParseObjectName($sLine)
 	Local $aName
 	$aName = StringRegExp($sLine, "^\s?\*\s?([a-zA-Z0-9_]{3,12})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
-	if UBound($aName) Then
+	If UBound($aName) Then
 		Return $aName[0]
 	EndIf
 	Return ""
 
-EndFunc
+EndFunc   ;==>ParseObjectName
 
 Func ParseCoords($sLine)
 	Local $aRaDe[2]
@@ -69,7 +72,7 @@ Func ParseCoords($sLine)
 	$aRaDe[0] = StringMid($sLine, 19, 10)
 	$aRaDe[1] = StringMid($sLine, 30, 10)
 	Return $aRaDe
-EndFunc
+EndFunc   ;==>ParseCoords
 
 
 Func ParseLine($sLine, $sObjectName)
@@ -87,17 +90,17 @@ Func ParseLine($sLine, $sObjectName)
 		EndIf
 	EndIf
 	Return $aLineData
-EndFunc
+EndFunc   ;==>ParseLine
 
 
 Local $sObjectName = ""
-For $i = 1 to _FileCountLines($sFilePath)
-    Local $line
+For $i = 1 To _FileCountLines($sFilePath)
+	Local $line
 	Local $aRaDe[2]
 	Local $aLineData[3]
 	$line = FileReadLine($hFileOpen, $i)
 
-	if StringMid($line, 1, 1) == "#" Then
+	If StringMid($line, 1, 1) == "#" Then
 		; comment, skip line
 		ContinueLoop
 	EndIf
@@ -125,11 +128,11 @@ FileClose($hFileOpen)
 
 Global $aLabelCtls[0]
 
-$hGUI = GuiCreate("TargetLoader", 450, 700, -1, -1 )
+$hGUI = GUICreate("TargetLoader", 450, 700, -1, -1)
 $Btn_Start = GUICtrlCreateDummy()
 For $i = 0 To UBound($aTargetNames) - 1
-    $x = $i * 30 + 50
-    $hLabel = GUICtrlCreateLabel(StringFormat("%-20s", $aTargetNames[$i]) & @TAB & $aTargetRas[$i] & @TAB & $aTargetDes[$i], 40, $x, 480, 20)
+	$x = $i * 30 + 50
+	$hLabel = GUICtrlCreateLabel(StringFormat("%-20s", $aTargetNames[$i]) & @TAB & $aTargetRas[$i] & @TAB & $aTargetDes[$i], 40, $x, 480, 20)
 	_ArrayAdd($aLabelCtls, $hLabel)
 	GUICtrlSetCursor($hLabel, 0)
 	GUICtrlSetFont($hLabel, 8.5, $FW_DONTCARE, 0, "Courier New")
@@ -148,16 +151,16 @@ $lastLabel = ""
 
 While 1
 
-    $Msg = GUIGetMsg($hGUI)
-    Switch $msg
-        Case $GUI_EVENT_CLOSE
-            Exit
+	$Msg = GUIGetMsg($hGUI)
+	Switch $Msg
+		Case $GUI_EVENT_CLOSE
+			Exit
 		Case $Btn_Start To $Btn_End
 			$aLabelData = StringSplit(GUICtrlRead($Msg), @TAB)
-            ExitLoop
+			ExitLoop
 	EndSwitch
 
-    $aInfo = GUIGetCursorInfo($hGUI)
+	$aInfo = GUIGetCursorInfo($hGUI)
 	Switch $aInfo[4]
 		Case $Btn_Start To $Btn_End
 			If $lastLabel <> $aInfo[4] Then
@@ -172,7 +175,7 @@ While 1
 			EndIf
 	EndSwitch
 
-Wend
+WEnd
 
 GUIDelete($hGUI)
 
@@ -196,10 +199,10 @@ EndIf
 $hTab = ControlGetHandle($hObservatoryWnd, 'Tab1', 2746)
 $tIndex = _GUICtrlTab_FindTab($hTab, 'Telescope', False, 0)
 If $tIndex = -1 Then
-    MsgBox(0, 'ERROR', 'Cannot Find Telescope Tab')
+	MsgBox(0, 'ERROR', 'Cannot Find Telescope Tab')
 	Exit
 Else
-    _GUICtrlTab_SetCurFocus($hTab, $tIndex)
+	_GUICtrlTab_SetCurFocus($hTab, $tIndex)
 EndIf
 
 
@@ -236,10 +239,10 @@ EndIf
 
 $tIndex = _GUICtrlTab_FindTab($hTab, "Expose", False, 0)
 If $tIndex = -1 Then
-    MsgBox(0, 'ERROR', 'Cannot Find Expose Tab')
+	MsgBox(0, 'ERROR', 'Cannot Find Expose Tab')
 	Exit
 Else
-    _GUICtrlTab_SetCurFocus($hTab, $tIndex)
+	_GUICtrlTab_SetCurFocus($hTab, $tIndex)
 EndIf
 
 
