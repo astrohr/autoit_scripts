@@ -1,5 +1,12 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_Icon=MaxIm_DL_264.ico
+#AutoIt3Wrapper_Compression=0
+#AutoIt3Wrapper_UseX64=y
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+; RunMaxImDL
 #include <MsgBoxConstants.au3>
 #include <WindowsConstants.au3>
+#include <WinAPIFiles.au3>
 #include <GuiTab.au3>
 #include <File.au3>
 #include <Constants.au3>
@@ -28,9 +35,8 @@ if $button == $IDCANCEL Then
 	Exit
 EndIf
 
+$sTTPath = IniRead("C:\Users\operator\Documents\AutoIt_scripts\dagor_scripts.ini", "General", "PhotoFolder", "D:\Pictures\TT")
 
-
-$sTTPath = "D:\Pictures\TT"
 
 $aFitsList = _FileListToArray($sTTPath, "*.fit", $FLTA_FILES, True)
 
@@ -52,7 +58,7 @@ EndIf
 
 
 
-Run("C:\Program Files (x86)\Diffraction Limited\MaxIm DL V6\MaxIm_DL.exe", "C:\Users\operator\Documents\MaxIm DL 6\")
+Run("C:\Program Files (x86)\Diffraction Limited\MaxIm DL 6\MaxIm_DL.exe", "C:\Users\operator\Documents\MaxIm DL 6\")
 
 $started = WinWaitActive("MaxIm DL Pro 6", "", 10)
 If Not $started Then _Exitonerror("MaxIm failed to start!")
