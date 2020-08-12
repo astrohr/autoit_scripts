@@ -254,16 +254,21 @@ If @error Then
 	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No RA TextBox")
 	Exit
 EndIf
+ControlSetText($hObservatoryWnd, "", $hCtrlRaText, $sRa)
 
 $hCtrlDeText = ControlGetHandle($hObservatoryWnd, "", 1910)
 If @error Then
 	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No DE TextBox")
 	Exit
 EndIf
+ControlSetText($hObservatoryWnd, "", $hCtrlDeText, $sDe)
 
-
-ControlSetText($hObservatoryWnd, "", 1907, $sRa)
-ControlSetText($hObservatoryWnd, "", 1910, $sDe)
+$hCtrlJNowRadio = ControlGetHandle($hObservatoryWnd, "", 3007)
+If @error Then
+	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No JNow RadioButton")
+	Exit
+EndIf
+ControlClick($hObservatoryWnd, "", $hCtrlJNowRadio)
 
 
 
@@ -279,6 +284,7 @@ If @error Then
 	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "Cannot find tabs on Camera Control window!")
 	Exit
 EndIf
+
 
 $tIndex = _GUICtrlTab_FindTab($hTab, "Expose", False, 0)
 If $tIndex = -1 Then
