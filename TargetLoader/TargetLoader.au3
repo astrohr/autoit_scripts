@@ -1,8 +1,8 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=TargetLoader.ico
-#AutoIt3Wrapper_UseX64=y
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <Constants.au3>
+#include <Array.au3>
 #include <Date.au3>
 #include <File.au3>
 #include <FileConstants.au3>
@@ -28,6 +28,8 @@
 Global $aTargetNames[0]
 Global $aTargetRas[0]
 Global $aTargetDes[0]
+Global $aTargetReps[0]
+Global $aTargetExps[0]
 
 Local $dToday = _DateToDayValue(@YEAR, @MON, @MDAY), $Y, $M, $D
 
@@ -61,8 +63,27 @@ Func ParseObjectName($sLine)
 		Return $aName[0]
 	EndIf
 	Return ""
-
 EndFunc   ;==>ParseObjectName
+
+
+Func ParseObjectRepeat($sLine)
+	Local $aExpStr
+	$aExpStr = StringRegExp($sLine, "^\s?\*\s?(?:[a-zA-Z0-9_]{3,12})(?:[\s\t]+)([0-9]{1,3})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
+	If UBound($aExpStr) Then
+		Return $aExpStr[0]
+	EndIf
+	Return ""
+EndFunc   ;==>ParseObjectRepeat
+
+Func ParseObjectExposure($sLine)
+	Local $aExpStr
+	$aExpStr = StringRegExp($sLine, "^\s?\*\s?(?:[a-zA-Z0-9_]{3,12})(?:[\s\t]+)(?:[0-9]+\s{1,3})?x\s{1,3}([0-9]{1,4})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
+	If UBound($aExpStr) Then
+		Return $aExpStr[0]
+	EndIf
+	Return ""
+EndFunc   ;==>ParseObjectExposure
+
 
 Func ParseCoords($sLine)
 	Local $aRaDe[2]
@@ -75,14 +96,22 @@ Func ParseCoords($sLine)
 EndFunc   ;==>ParseCoords
 
 
-Func ParseLine($sLine, $sObjectName)
+Func ParseLine($sLine, $sObjectName, $sObjectRepeat, $sObjectExposure)
 	Local $sNewName = ParseObjectName($sLine)
+	Local $sNewRepeat = ParseObjectRepeat($sLine)
+	Local $sNewExposure = ParseObjectExposure($sLine)
 	Local $aRaDe[2]
-	Local $aLineData[3]
+	Local $aLineData[5]
 	If $sNewName <> "" Then
 		$aLineData[0] = $sNewName
+		$aLineData[1] = Null  ; Ra
+		$aLineData[2] = Null  ; De
+		$aLineData[3] = $sNewRepeat
+		$aLineData[4] = $sNewExposure
 	Else
 		$aLineData[0] = $sObjectName
+		$aLineData[3] = $sObjectRepeat
+		$aLineData[4] = $sObjectExposure
 		$aRaDe = ParseCoords($sLine)
 		If UBound($aRaDe) == 2 Then
 			$aLineData[1] = $aRaDe[0]
@@ -94,6 +123,8 @@ EndFunc   ;==>ParseLine
 
 
 Local $sObjectName = ""
+Local $sObjectRepeat = ""
+Local $sObjectExp = ""
 For $i = 1 To _FileCountLines($sFilePath)
 	Local $line
 	Local $aRaDe[2]
@@ -105,17 +136,27 @@ For $i = 1 To _FileCountLines($sFilePath)
 		ContinueLoop
 	EndIf
 
-	$aLineData = ParseLine($line, $sObjectName)
+	$aLineData = ParseLine($line, $sObjectName, $sObjectRepeat, $sObjectExp)
 	$sObjectName = StringStripWS($aLineData[0], 8)
+	$sObjectRepeat = StringStripWS($aLineData[3], 3)
+	$sObjectExp = StringStripWS($aLineData[4], 4)
+	If StringLen($sObjectRepeat) < 1 Then
+		$sObjectRepeat = "NN"
+	EndIf
+	If StringLen($sObjectExp) < 1 Then
+		$sObjectExp = "??"
+	EndIf
 
-	If UBound($aLineData) > 1 Then
+	If $aLineData[1] Then
 		$aRaDe[0] = $aLineData[1]
 		$aRaDe[1] = $aLineData[2]
 	EndIf
 	If $aRaDe[0] Then
-		_ArrayAdd($aTargetNames, StringStripWS($aLineData[0], 8))
+		_ArrayAdd($aTargetNames, $sObjectName)
 		_ArrayAdd($aTargetRas, $aLineData[1])
 		_ArrayAdd($aTargetDes, $aLineData[2])
+		_ArrayAdd($aTargetReps, $sObjectRepeat)
+		_ArrayAdd($aTargetExps, $sObjectExp)
 	EndIf
 
 Next
@@ -128,11 +169,11 @@ FileClose($hFileOpen)
 
 Global $aLabelCtls[0]
 
-$hGUI = GUICreate("TargetLoader", 450, 700, -1, -1)
+$hGUI = GUICreate("TargetLoader", 500, 700, -1, -1)
 $Btn_Start = GUICtrlCreateDummy()
 For $i = 0 To UBound($aTargetNames) - 1
 	$x = $i * 30 + 50
-	$hLabel = GUICtrlCreateLabel(StringFormat("%-20s", $aTargetNames[$i]) & @TAB & $aTargetRas[$i] & @TAB & $aTargetDes[$i], 40, $x, 480, 20)
+	$hLabel = GUICtrlCreateLabel(StringFormat("%-15s", $aTargetNames[$i]) & @TAB & $aTargetRas[$i] & @TAB & $aTargetDes[$i] & @TAB & $aTargetReps[$i] & " × " & $aTargetExps[$i] & " sec", 40, $x, 480, 20)
 	_ArrayAdd($aLabelCtls, $hLabel)
 	GUICtrlSetCursor($hLabel, 0)
 	GUICtrlSetFont($hLabel, 8.5, $FW_DONTCARE, 0, "Courier New")
@@ -183,7 +224,9 @@ GUIDelete($hGUI)
 $sName = StringStripWS($aLabelData[1], 8)
 $sRa = $aLabelData[2]
 $sDe = $aLabelData[3]
-
+$sRepXExp = StringSplit($aLabelData[4], " ")
+$sRep = $sRepXExp[1]
+$sExp = $sRepXExp[3]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;; Fill data to MaxIm DL ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -255,9 +298,6 @@ ControlClick($hCameraWnd, "", 2447)
 
 
 
-
-
-
 $hAutosaveWnd = WinWait("Autosave Setup", "Autosave Filename", 3)
 If @error Then
 	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "Autosave Setup window on found!")
@@ -267,12 +307,35 @@ EndIf
 $hfilenameTxt = ControlGetHandle($hAutosaveWnd, "", 2069)
 If @error Then
 	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No Autosave Button")
-	Exit
+Else
+	ControlSetText($hAutosaveWnd, "", 2069, $sName)
 EndIf
-ControlSetText($hAutosaveWnd, "", 2069, $sName)
 
 
+$hRepeatInput = ControlGetHandle($hAutosaveWnd, "", 2504)
+If @error Then
+	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "Cannot find repeat input field!")
+Else
+	ControlSetText($hAutosaveWnd, "", $hRepeatInput, $sRep)
+EndIf
 
+$hExposureInput = ControlGetHandle($hAutosaveWnd, "", 2498)
+If @error Then
+	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "Cannot find exposure input field!")
+Else
+	ControlSetText($hAutosaveWnd, "", $hExposureInput, $sExp)
+EndIf
+
+$hSuffixInput = ControlGetHandle($hAutosaveWnd, "", 2470)
+If @error Then
+	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "Cannot find suffix input field!")
+Else
+	$sCurrentSuffix = ControlGetText($hAutosaveWnd, "", $hSuffixInput)
+	$aSuffix = StringSplit($sCurrentSuffix, "_")
+	$aSuffix[2] = $sExp
+	$sSuffix = _ArrayToString($aSuffix, "_", 1)
+	ControlSetText($hAutosaveWnd, "", $hSuffixInput, $sSuffix)
+EndIf
 
 
 
