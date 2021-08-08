@@ -16,8 +16,7 @@
 #include <WindowsConstants.au3>
 #include <WinAPI.au3>
 #include <WinAPIFiles.au3>
-
-
+#include <GetAllWindowsControls.au3>
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -42,7 +41,7 @@ Else
 	$dToday = StringFormat("%04i-%02i-%02i", $Y, $M, $D)
 EndIf
 
-$sFileName = $dToday & ".txt"
+$sFileName = $dToday & "-log.txt"
 $sTTPath = IniRead("C:\Users\operator\Documents\AutoIt_scripts\dagor_scripts.ini", "General", "PhotoFolder", "D:\Pictures\TT")
 $sFileDir = $sTTPath & "\" & $dToday
 $sFilePath = $sFileDir & "\" & $sFileName
@@ -51,7 +50,7 @@ $sFilePath = $sFileDir & "\" & $sFileName
 ;$hFileOpen = FileOpen($sFilePath, $FO_READ)
 $hFileOpen = FileOpen($sFilePath, 0)
 If $hFileOpen = -1 Then
-	MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file.")
+	MsgBox($MB_SYSTEMMODAL, "", "An error occurred when reading the file. " & $sFilePath)
 	Exit
 EndIf
 
@@ -68,7 +67,7 @@ EndFunc   ;==>ParseObjectName
 
 Func ParseObjectRepeat($sLine)
 	Local $aExpStr
-	$aExpStr = StringRegExp($sLine, "^\s?\*\s?(?:[a-zA-Z0-9_]{3,12})(?:[\s\t]+)([0-9]{1,3})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
+	$aExpStr = StringRegExp($sLine, "^\s?\*\s?(?:[a-zA-Z0-9_]{3,12})(?:[\s\t]+)(?:[0-9]+\.[0-9]+[\s\t]+)?([0-9]{1,3})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
 	If UBound($aExpStr) Then
 		Return $aExpStr[0]
 	EndIf
@@ -77,7 +76,7 @@ EndFunc   ;==>ParseObjectRepeat
 
 Func ParseObjectExposure($sLine)
 	Local $aExpStr
-	$aExpStr = StringRegExp($sLine, "^\s?\*\s?(?:[a-zA-Z0-9_]{3,12})(?:[\s\t]+)(?:[0-9]+\s{1,3})?x\s{1,3}([0-9]{1,4})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
+	$aExpStr = StringRegExp($sLine, "^\s?\*\s?(?:[a-zA-Z0-9_]{3,12})(?:[\s\t]+)(?:[0-9]+\.[0-9]+[\s\t]+)?(?:[0-9]+\s{1,3})?x\s{1,3}([0-9]{1,4})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
 	If UBound($aExpStr) Then
 		Return $aExpStr[0]
 	EndIf
@@ -135,8 +134,8 @@ For $i = 1 To _FileCountLines($sFilePath)
 		; comment, skip line
 		ContinueLoop
 	EndIf
-
 	$aLineData = ParseLine($line, $sObjectName, $sObjectRepeat, $sObjectExp)
+
 	$sObjectName = StringStripWS($aLineData[0], 8)
 	$sObjectRepeat = StringStripWS($aLineData[3], 3)
 	$sObjectExp = StringStripWS($aLineData[4], 4)
@@ -263,15 +262,25 @@ If @error Then
 EndIf
 ControlSetText($hObservatoryWnd, "", $hCtrlDeText, $sDe)
 
-$hCtrlJNowRadio = ControlGetHandle($hObservatoryWnd, "", 3007)
+$hCtrlJ2000Radio = ControlGetHandle($hObservatoryWnd, "", 3008)
 If @error Then
-	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No JNow RadioButton")
+	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No J2000 RadioButton")
 	Exit
 EndIf
-ControlClick($hObservatoryWnd, "", $hCtrlJNowRadio)
+ControlClick($hObservatoryWnd, "", $hCtrlJ2000Radio)
 
 
-
+;$hCtrlMenuButton = GetAllWindowsControls($hObservatoryWnd, True, "" , "Button", 1877)[0]
+;If @error Then
+;	MsgBox($MB_OK + $MB_ICONWARNING, "LoadTarget", "No Menu Buton")
+;	Exit
+;EndIf
+;ControlClick($hObservatoryWnd, "", $hCtrlMenuButton)
+;WinWait("[class:#32768]")
+;WinActivate("[class:#32768]")
+;ControlSend($hObservatoryWnd, "", "[class:#32768]", "{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+;Send("{DOWN}{DOWN}{DOWN}{DOWN}{DOWN}{ENTER}")
+;Sleep(1000)
 
 $hCameraWnd = WinWait("Camera Control", "Guide", 3)
 If @error Then
