@@ -29,6 +29,7 @@ Global $aTargetRas[0]
 Global $aTargetDes[0]
 Global $aTargetReps[0]
 Global $aTargetExps[0]
+Global $aTargetTime[0]
 
 Local $dToday = _DateToDayValue(@YEAR, @MON, @MDAY), $Y, $M, $D
 
@@ -54,7 +55,6 @@ If $hFileOpen = -1 Then
 	Exit
 EndIf
 
-
 Func ParseObjectName($sLine)
 	Local $aName
 	$aName = StringRegExp($sLine, "^\s?\*\s?([a-zA-Z0-9_]{3,12})(?:[\s\t]+|$)", $STR_REGEXPARRAYMATCH)
@@ -63,7 +63,6 @@ Func ParseObjectName($sLine)
 	EndIf
 	Return ""
 EndFunc   ;==>ParseObjectName
-
 
 Func ParseObjectRepeat($sLine)
 	Local $aExpStr
@@ -83,7 +82,6 @@ Func ParseObjectExposure($sLine)
 	Return ""
 EndFunc   ;==>ParseObjectExposure
 
-
 Func ParseCoords($sLine)
 	Local $aRaDe[2]
 	If StringMid($sLine, 1, 2) <> "20" Then
@@ -94,19 +92,29 @@ Func ParseCoords($sLine)
 	Return $aRaDe
 EndFunc   ;==>ParseCoords
 
+Func ParseObjectTime($sLine)
+	Local $aExpStr
+	If StringMid($sLine, 1, 2) <> "20" Then
+		Return
+	EndIf
+	$aExpStr = StringMid($sLine, 12, 4)
+	Return $aExpStr
+EndFunc   ;==>ParseObjectTime
 
-Func ParseLine($sLine, $sObjectName, $sObjectRepeat, $sObjectExposure)
+Func ParseLine($sLine, $sObjectName, $sObjectRepeat, $sObjectExposure, $sObjectTime)
 	Local $sNewName = ParseObjectName($sLine)
 	Local $sNewRepeat = ParseObjectRepeat($sLine)
 	Local $sNewExposure = ParseObjectExposure($sLine)
 	Local $aRaDe[2]
-	Local $aLineData[5]
+	Local $sNewTime = ParseObjectTime($sLine)
+	Local $aLineData[6]
 	If $sNewName <> "" Then
 		$aLineData[0] = $sNewName
 		$aLineData[1] = Null  ; Ra
 		$aLineData[2] = Null  ; De
 		$aLineData[3] = $sNewRepeat
 		$aLineData[4] = $sNewExposure
+		$aLineData[5] = $sNewTime
 	Else
 		$aLineData[0] = $sObjectName
 		$aLineData[3] = $sObjectRepeat
@@ -116,6 +124,7 @@ Func ParseLine($sLine, $sObjectName, $sObjectRepeat, $sObjectExposure)
 			$aLineData[1] = $aRaDe[0]
 			$aLineData[2] = $aRaDe[1]
 		EndIf
+		$aLineData[5] = $sNewTime
 	EndIf
 	Return $aLineData
 EndFunc   ;==>ParseLine
@@ -124,6 +133,7 @@ EndFunc   ;==>ParseLine
 Local $sObjectName = ""
 Local $sObjectRepeat = ""
 Local $sObjectExp = ""
+Local $sObjectTime = ""
 For $i = 1 To _FileCountLines($sFilePath)
 	Local $line
 	Local $aRaDe[2]
@@ -134,11 +144,12 @@ For $i = 1 To _FileCountLines($sFilePath)
 		; comment, skip line
 		ContinueLoop
 	EndIf
-	$aLineData = ParseLine($line, $sObjectName, $sObjectRepeat, $sObjectExp)
+	$aLineData = ParseLine($line, $sObjectName, $sObjectRepeat, $sObjectExp, $sObjectTime)
 
 	$sObjectName = StringStripWS($aLineData[0], 8)
 	$sObjectRepeat = StringStripWS($aLineData[3], 3)
 	$sObjectExp = StringStripWS($aLineData[4], 4)
+	$sObjectTime = StringStripWS($aLineData[5], 4)
 	If StringLen($sObjectRepeat) < 1 Then
 		$sObjectRepeat = "NN"
 	EndIf
@@ -156,6 +167,7 @@ For $i = 1 To _FileCountLines($sFilePath)
 		_ArrayAdd($aTargetDes, $aLineData[2])
 		_ArrayAdd($aTargetReps, $sObjectRepeat)
 		_ArrayAdd($aTargetExps, $sObjectExp)
+		_ArrayAdd($aTargetTime, $sObjectTime)
 	EndIf
 
 Next
@@ -168,11 +180,11 @@ FileClose($hFileOpen)
 
 Global $aLabelCtls[0]
 
-$hGUI = GUICreate("TargetLoader", 500, 700, -1, -1)
+$hGUI = GUICreate("TargetLoader", 560, 700, -1, -1)
 $Btn_Start = GUICtrlCreateDummy()
 For $i = 0 To UBound($aTargetNames) - 1
 	$x = $i * 30 + 50
-	$hLabel = GUICtrlCreateLabel(StringFormat("%-15s", $aTargetNames[$i]) & @TAB & $aTargetRas[$i] & @TAB & $aTargetDes[$i] & @TAB & $aTargetReps[$i] & " × " & $aTargetExps[$i] & " sec", 40, $x, 480, 20)
+	$hLabel = GUICtrlCreateLabel(StringFormat("%-15s", $aTargetNames[$i]) & @TAB & $aTargetRas[$i] & @TAB & $aTargetDes[$i] & @TAB & $aTargetReps[$i] & " × " & $aTargetExps[$i] & " sec" & @TAB & $aTargetTime[$i], 40, $x, 480, 20)
 	_ArrayAdd($aLabelCtls, $hLabel)
 	GUICtrlSetCursor($hLabel, 0)
 	GUICtrlSetFont($hLabel, 8.5, $FW_DONTCARE, 0, "Courier New")
@@ -184,7 +196,6 @@ GUISetState(@SW_SHOW, $hGUI)
 
 
 _GUIScrollbars_Generate($hGUI, 350, $x + 50)
-
 
 
 $lastLabel = ""
