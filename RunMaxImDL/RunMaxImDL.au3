@@ -27,14 +27,6 @@ EndIf
 
 
 
-
-$button = MsgBox($MB_OKCANCEL + $MB_ICONWARNING + $MB_DEFBUTTON1 + $MB_TASKMODAL + $MB_SETFOREGROUND,	$sTitle,	"Open 2 SSH connections to TCS and do:" & @LF & @LF & " • d init" & @LF &	" • d api run" & @LF & @LF & "Do this before continuing!")
-
-if $button == $IDCANCEL Then
-	MsgBox($MB_OK + $MB_ICONINFORMATION + $MB_TASKMODAL + $MB_SETFOREGROUND, $sTitle, "Canceled")
-	Exit
-EndIf
-
 $sTTPath = IniRead("C:\Users\operator\Documents\AutoIt_scripts\dagor_scripts.ini", "General", "PhotoFolder", "D:\Pictures\TT")
 
 
